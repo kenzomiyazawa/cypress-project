@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 
-describe ('newSuite',() =>{
+describe ('webElements',() =>{
 
     beforeEach('Go To Form Layour Page',() => {
         cy.visit('/')
@@ -161,7 +161,7 @@ describe ('newSuite',() =>{
 
     })
 
-    it.only ('list & dropdown', () =>{
+    it ('list & dropdown', () =>{
 
         //1-simple selection
         cy.get('nav').find('nb-select').click()
@@ -180,5 +180,90 @@ describe ('newSuite',() =>{
                 }
             })
         })
+    })
+
+    it ('Web Tables', () =>{
+
+        cy.contains('Tables & Data').click()
+        cy.contains('Smart Table').click()
+
+        //1 Get the row
+        cy.get('tbody').contains('tr', 'Larry').then( tableRow =>{
+            cy.wrap(tableRow).find('.nb-edit').click()
+            cy.wrap(tableRow).find('[placeholder="Age"]').clear().type('19')
+            cy.wrap(tableRow).find('.nb-checkmark').click()
+            //Get by table row index
+            cy.wrap(tableRow).find('td').eq(6).should('contain', '19')
+
+        })
+
+        //2 Get by index
+        cy.get('thead').find('.nb-plus').click()
+        cy.get('thead').find('tr').eq(2).then(tableRow => {
+            cy.wrap(tableRow).find('[placeholder="First Name"]').type('Harry')
+            cy.wrap(tableRow).find('[placeholder="Last Name"]').type('Victor')
+            cy.wrap(tableRow).find('.nb-checkmark').click()
+        })
+        cy.get('tbody tr').first().find('td').then( tableColumn => {
+            cy.wrap(tableColumn).eq(2).should('contain', 'Harry')
+            cy.wrap(tableColumn).eq(3).should('contain', 'Victor')
+        })
+
+        //3 Get each row validated
+        cy.get('thead [placeholder="Age"]').clear().type('20')
+        cy.wait(500)
+        cy.get('tbody tr').each(tableRow =>{
+            cy.wrap(tableRow).find('td').eq(6).should('contain', '20')
+        })
+        
+        //Check every value in array
+        const age = [20,19,40,200]
+
+        cy.wrap(age).each(age =>{
+            cy.get('thead [placeholder="Age"]').clear().type(age)
+            cy.wait(500)
+            cy.get('tbody tr').each(tableRow =>{
+                if (age == 200){
+                    cy.wrap(tableRow).should('contain', 'No data found')
+                }
+                else{
+                    cy.wrap(tableRow).find('td').eq(6).should('contain', age)
+
+                }      
+            })
+
+        })
+        
+    })
+
+    it ('Tooltips',() =>{
+        cy.contains('Modal & Overlays').click()
+        cy.contains('Tooltip').click()
+
+        cy.contains('nb-card', 'Colored Tooltips')
+            .contains('Default').click()
+        cy.get('nb-tooltip').should('contain', 'This is a tooltip')
+    })
+
+    it.only ('dialog box', () =>{
+        cy.contains('Tables & Data').click()
+        cy.contains('Smart Table').click()
+
+        //First method - Will not failed if no message appear
+        // cy.get('tbody tr').first().find('.nb-trash').click()
+        // cy.on('window:confirm', (confirm) =>{
+        //     expect(confirm).to.equal('Are you sure you want to delete?')
+        // } )
+
+        //Second method 
+        const stub = cy.stub() //If no popup. the value will be emptied
+        cy.on('window:confirm', stub)
+        cy.get('tbody tr').first().find('.nb-trash').click().then(() =>{
+             expect(stub.getCall(0)).to.be.calledWith('Are you sure you want to delete?')
+         })
+
+        //Cancel the dialog
+        // cy.get('tbody tr').first().find('.nb-trash').click()
+        // cy.on('window:confirm', () => false)
     })
 })
